@@ -1,4 +1,4 @@
-<h1 align="center">Redrover</h1>
+<h1 align="center">reDrover</h1>
 
 <p align="center">
   <em>Per-process proxy + voice-bypass for Discord. No drivers, no global VPN.</em>
@@ -14,7 +14,7 @@
 
 ---
 
-Redrover forces the **Discord** desktop client to send its TCP traffic
+reDrover forces the **Discord** desktop client to send its TCP traffic
 through a user-specified **HTTP** or **SOCKS5** proxy and applies optional
 mangling to outgoing **UDP** packets to bypass local voice-chat blocks.
 It runs entirely at the user-process level — no kernel driver, no
@@ -53,7 +53,7 @@ implemented incrementally.
 - **HTTP Basic auth** (RFC 7617).
 - **SOCKS5 username/password auth for UDP ASSOCIATE** (RFC 1929).
 - **SOCKS5 UDP ASSOCIATE** (RFC 1928 §7) — actual UDP-over-SOCKS5 relay, not just TCP.
-- **Pluggable voice-UDP strategies** — `classic`, `uae_v1/v2`, `split`, `custom`, `force_tcp_fallback`.
+- **Pluggable voice-UDP strategies** - the GUI exposes implemented `classic`, `split`, and `custom` variants plus `off` and `force_tcp_fallback`.
 - **Drop-in compatibility** with `drover.ini` from the original Pascal project.
 - **Self-propagation**: when Discord auto-updates to a new `app-X.Y.Z` folder, the DLL re-installs itself.
 - **Cross-platform native shim**: same C++ core, Windows DLL or POSIX preload library.
@@ -65,10 +65,10 @@ implemented incrementally.
 
 ### Windows
 
-1. Download or build `redrover.exe` and `version.dll` (see [Building from source](#building-from-source)).
+1. Download or build `reDrover.exe` and `version.dll` (see [Building from source](#building-from-source)).
 2. Drop both into the same folder (along with optional `drover.ini`, `drover-packet.bin`, and `strategies/*.bin`).
 3. Close Discord.
-4. Run `redrover.exe`, fill in the proxy details, click **Install**.
+4. Run `reDrover.exe`, fill in the proxy details, click **Install**.
 5. Start Discord normally.
 
 ### Linux
@@ -105,7 +105,7 @@ config dir on POSIX. Both the GUI installer and the native shim parse it.
 proxy = http://user:pass@127.0.0.1:1080      ; or socks5://…  or empty for Direct
 
 [udp]
-strategy        = classic                     ; off | classic | uae_v1 | uae_v2 | split | custom
+strategy        = classic                     ; off | classic | split | custom
 prefix_delay_ms = 50
 prefix_packets  = 00, 01                      ; hex bytes, each entry is one packet
 split_first     = 0                           ; >1 splits the first 74-byte packet into N chunks
@@ -129,7 +129,7 @@ reference with comments.
 
 ```
                 ┌──────────────────────┐
-                │  redrover.exe (Rust) │
+                │  reDrover.exe (Rust) │
                 │  iced GUI installer  │
                 └──────────┬───────────┘
                            │  writes
@@ -174,6 +174,10 @@ scripts\build.ps1
 ```
 
 Both scripts produce a ready-to-ship `build-output/` directory.
+
+Tagged GitHub releases contain archives only: Windows x64, Linux x64,
+Linux ARM64, and macOS ARM64 packages. The Actions `Release` workflow
+can also be run manually with a tag matching the version in `Cargo.toml`.
 
 ### Requirements
 

@@ -27,7 +27,7 @@ namespace {
             // We may already have a console (e.g. Discord launched from cmd).
             AttachConsole(ATTACH_PARENT_PROCESS);
         }
-        SetConsoleTitleW(L"Redrover - debug console");
+        SetConsoleTitleW(L"reDrover - debug console");
 
         FILE* dummy = nullptr;
         freopen_s(&dummy, "CONOUT$", "w", stdout);

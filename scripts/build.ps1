@@ -1,7 +1,7 @@
-# Redrover build script — Windows.
+# reDrover build script - Windows.
 #
 # Builds both halves of the project and assembles a ready-to-ship folder:
-#   1. Rust GUI installer  (redrover.exe)        via cargo
+#   1. Rust GUI installer  (reDrover.exe)        via cargo
 #   2. C++ injected DLL    (version.dll, matching Discord bitness) via cmake + msvc
 #   3. Stages everything (with dist/drover.ini and dist/strategies/*) into
 #      build-output/ so the result is one drag-and-drop folder.
@@ -144,14 +144,20 @@ function Stage-Output {
     }
 
     $cargoProfile = if ($Config -eq 'Release') { 'release' } else { 'debug' }
-    $guiExe       = Join-Path $CargoTargetDir "$cargoProfile\redrover.exe"
+    $guiExe       = Join-Path $CargoTargetDir "$cargoProfile\reDrover.exe"
     $dllPath      = Join-Path $DllBuildDir   "$Config\version.dll"
 
     if ($Skip -ne 'Gui') {
         if (-not (Test-Path $guiExe)) {
             Fail "Expected GUI binary not found: $guiExe"
         }
-        Copy-Item -Force $guiExe (Join-Path $OutputDir 'redrover.exe')
+        $legacyGuiExe = Get-ChildItem -Path $OutputDir -File -Filter '*.exe' |
+            Where-Object { $_.Name -ceq 'redrover.exe' } |
+            Select-Object -First 1
+        if ($legacyGuiExe) {
+            Remove-Item -Force -LiteralPath $legacyGuiExe.FullName
+        }
+        Copy-Item -Force $guiExe (Join-Path $OutputDir 'reDrover.exe')
     }
     if ($Skip -ne 'Dll') {
         if (-not (Test-Path $dllPath)) {
@@ -173,10 +179,13 @@ function Stage-Output {
     $stratSrc = Join-Path $DistDir 'strategies'
     if (Test-Path $stratSrc) {
         $stratDst = Join-Path $OutputDir 'strategies'
-        if (-not (Test-Path $stratDst)) {
-            New-Item -ItemType Directory -Path $stratDst | Out-Null
+        if (Test-Path $stratDst) {
+            Remove-Item -Recurse -Force -LiteralPath $stratDst
         }
-        Get-ChildItem $stratSrc -File | ForEach-Object {
+        New-Item -ItemType Directory -Path $stratDst | Out-Null
+        Get-ChildItem $stratSrc -File | Where-Object {
+            $_.Extension -ne '.bin' -or $_.Length -gt 0
+        } | ForEach-Object {
             Copy-Item -Force $_.FullName (Join-Path $stratDst $_.Name)
         }
     }
@@ -196,12 +205,12 @@ function Print-Summary {
         }
     }
     Write-Host ''
-    Write-Host "Run with: $(Join-Path $OutputDir 'redrover.exe')" -ForegroundColor Yellow
+    Write-Host "Run with: $(Join-Path $OutputDir 'reDrover.exe')" -ForegroundColor Yellow
 }
 
 # --- Main --------------------------------------------------------------------
 
-Write-Host "Redrover build  ($Config)" -ForegroundColor White
+Write-Host "reDrover build  ($Config)" -ForegroundColor White
 Write-Host "Repo root: $RepoRoot"
 
 if ($Clean) { Invoke-Clean }

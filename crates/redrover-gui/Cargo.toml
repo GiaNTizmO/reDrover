@@ -1,6 +1,7 @@
 [package]
 name = "redrover-gui"
-description = "Iced-based installer GUI for Redrover"
+description = "Iced-based installer GUI for reDrover"
+build = "build.rs"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,7 +12,7 @@ readme.workspace = true
 rust-version.workspace = true
 
 [[bin]]
-name = "redrover"
+name = "reDrover"
 path = "src/main.rs"
 
 [dependencies]
@@ -28,9 +29,10 @@ iced.workspace = true
 windows.workspace = true
 
 [build-dependencies]
-# Hides the console window on Windows release builds (via subsystem=windows).
+winresource = "0.1"
 
-[package.metadata.winres]
-ProductName = "Redrover"
-FileDescription = "Discord proxy installer"
+[package.metadata.winresource]
+ProductName = "reDrover"
+FileDescription = "reDrover Discord proxy installer"
+OriginalFilename = "reDrover.exe"
 LegalCopyright = "MIT"

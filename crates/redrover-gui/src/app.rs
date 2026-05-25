@@ -15,7 +15,10 @@
 use std::path::PathBuf;
 
 use iced::Task;
-use redrover_config::{DroverOptions, ProxyKind, ProxyValue, UdpStrategy};
+use redrover_config::{
+    udp::{format_prefix_packets, parse_prefix_packets},
+    DroverOptions, ProxyKind, ProxyValue, UdpStrategy, LOG_FILENAME_DEFAULT,
+};
 
 use crate::{discord, install};
 
@@ -30,9 +33,13 @@ pub enum Message {
 
     UdpStrategySelected(UdpStrategy),
     UdpDelayChanged(String),
+    UdpPrefixPacketsChanged(String),
+    UdpSplitFirstChanged(String),
     UdpForceTcpToggled(bool),
     Socks5UdpAssociateToggled(bool),
+    LogLevelSelected(LogLevelChoice),
     LogFileToggled(bool),
+    LogFileChanged(String),
     LogConsoleToggled(bool),
 
     InstallPressed,
@@ -59,6 +66,63 @@ impl ProxyKindChoice {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevelChoice {
+    Off,
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl LogLevelChoice {
+    pub const ALL: &'static [Self] = &[
+        Self::Off,
+        Self::Error,
+        Self::Warn,
+        Self::Info,
+        Self::Debug,
+        Self::Trace,
+    ];
+
+    fn parse(value: Option<&str>) -> Self {
+        match value.unwrap_or("info").trim().to_ascii_lowercase().as_str() {
+            "off" => Self::Off,
+            "error" => Self::Error,
+            "warn" => Self::Warn,
+            "debug" => Self::Debug,
+            "trace" => Self::Trace,
+            _ => Self::Info,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::Error => "error",
+            Self::Warn => "warn",
+            Self::Info => "info",
+            Self::Debug => "debug",
+            Self::Trace => "trace",
+        }
+    }
+}
+
+impl std::fmt::Display for LogLevelChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let label = match self {
+            Self::Off => "Off",
+            Self::Error => "Error",
+            Self::Warn => "Warn",
+            Self::Info => "Info",
+            Self::Debug => "Debug",
+            Self::Trace => "Trace",
+        };
+        f.write_str(label)
+    }
+}
+
 #[derive(Debug)]
 pub struct App {
     // Form state
@@ -72,9 +136,13 @@ pub struct App {
     // UDP / issue #65 controls
     pub udp_strategy: UdpStrategy,
     pub udp_delay_ms: String,
+    pub udp_prefix_packets: String,
+    pub udp_split_first: String,
     pub udp_force_tcp_fallback: bool,
     pub socks5_udp_associate: bool,
+    pub log_level: LogLevelChoice,
     pub log_file_enabled: bool,
+    pub log_file: String,
     pub log_console: bool,
 
     // Runtime
@@ -100,6 +168,17 @@ impl App {
         // Try to seed the form from the most recently installed drover.ini
         let opt = locate_existing_options(&current_exe_dir).unwrap_or_default();
         let proxy = opt.proxy_value();
+        let udp_strategy = if opt.udp.strategy.is_gui_choice() {
+            opt.udp.strategy
+        } else {
+            UdpStrategy::Classic
+        };
+        let udp_split_first =
+            if matches!(udp_strategy, UdpStrategy::Split) && opt.udp.split_first < 2 {
+                "2".to_string()
+            } else {
+                opt.udp.split_first.to_string()
+            };
 
         let mut app = Self {
             kind: ProxyKindChoice::Direct,
@@ -109,11 +188,17 @@ impl App {
             login: String::new(),
             password: String::new(),
 
-            udp_strategy: opt.udp.strategy,
+            udp_strategy,
             udp_delay_ms: opt.udp.prefix_delay_ms.to_string(),
+            udp_prefix_packets: format_prefix_packets(&opt.udp.prefix_packets),
+            udp_split_first,
             udp_force_tcp_fallback: opt.udp.force_tcp_fallback,
             socks5_udp_associate: opt.socks5_udp_associate,
+            log_level: LogLevelChoice::parse(opt.log_level.as_deref()),
             log_file_enabled: opt.log_file_enabled,
+            log_file: opt
+                .log_file
+                .unwrap_or_else(|| LOG_FILENAME_DEFAULT.to_string()),
             log_console: opt.log_console,
 
             status: Status::Idle,
@@ -146,8 +231,8 @@ impl App {
         match message {
             Message::ProxyKindSelected(k) => {
                 self.kind = k;
-                if matches!(k, ProxyKindChoice::Direct) {
-                    // Direct mode disables host/port/auth in the view.
+                if !matches!(k, ProxyKindChoice::Socks5) {
+                    self.socks5_udp_associate = false;
                 }
             }
             Message::HostChanged(v) => self.host = v,
@@ -158,13 +243,28 @@ impl App {
             Message::LoginChanged(v) => self.login = v,
             Message::PasswordChanged(v) => self.password = v,
 
-            Message::UdpStrategySelected(s) => self.udp_strategy = s,
+            Message::UdpStrategySelected(s) => {
+                self.udp_strategy = s;
+                if matches!(s, UdpStrategy::Split)
+                    && self.udp_split_first.parse::<u8>().unwrap_or(0) < 2
+                {
+                    self.udp_split_first = "2".into();
+                }
+            }
             Message::UdpDelayChanged(v) => {
                 self.udp_delay_ms = v.chars().filter(|c| c.is_ascii_digit()).collect();
             }
+            Message::UdpPrefixPacketsChanged(v) => self.udp_prefix_packets = v,
+            Message::UdpSplitFirstChanged(v) => {
+                self.udp_split_first = v.chars().filter(|c| c.is_ascii_digit()).collect()
+            }
             Message::UdpForceTcpToggled(v) => self.udp_force_tcp_fallback = v,
-            Message::Socks5UdpAssociateToggled(v) => self.socks5_udp_associate = v,
+            Message::Socks5UdpAssociateToggled(v) => {
+                self.socks5_udp_associate = v && matches!(self.kind, ProxyKindChoice::Socks5);
+            }
+            Message::LogLevelSelected(v) => self.log_level = v,
             Message::LogFileToggled(v) => self.log_file_enabled = v,
+            Message::LogFileChanged(v) => self.log_file = v,
             Message::LogConsoleToggled(v) => self.log_console = v,
 
             Message::InstallPressed => {
@@ -197,19 +297,26 @@ impl App {
     }
 
     fn validate(&self) -> Result<(), String> {
-        if matches!(self.kind, ProxyKindChoice::Direct) {
-            return Ok(());
+        if !matches!(self.kind, ProxyKindChoice::Direct) {
+            let host = self.host.trim();
+            let port: u32 = self.port.trim().parse().unwrap_or(0);
+            if host.is_empty() {
+                return Err("Host is empty.".into());
+            }
+            if !(1..=65535).contains(&port) {
+                return Err("Port must be between 1 and 65535.".into());
+            }
+            if self.auth && (self.login.trim().is_empty() || self.password.is_empty()) {
+                return Err(
+                    "Login and password are required when authentication is enabled.".into(),
+                );
+            }
         }
-        let host = self.host.trim();
-        let port: u32 = self.port.trim().parse().unwrap_or(0);
-        if host.is_empty() {
-            return Err("Host is empty.".into());
-        }
-        if !(1..=65535).contains(&port) {
-            return Err("Port must be between 1 and 65535.".into());
-        }
-        if self.auth && (self.login.trim().is_empty() || self.password.is_empty()) {
-            return Err("Login and password are required when authentication is enabled.".into());
+        if matches!(self.udp_strategy, UdpStrategy::Split) {
+            let parts: u8 = self.udp_split_first.trim().parse().unwrap_or(0);
+            if !(2..=74).contains(&parts) {
+                return Err("Split packet count must be between 2 and 74.".into());
+            }
         }
         Ok(())
     }
@@ -243,9 +350,21 @@ impl App {
 
         opt.udp.strategy = self.udp_strategy;
         opt.udp.prefix_delay_ms = self.udp_delay_ms.parse().unwrap_or(50);
+        opt.udp.prefix_packets = parse_prefix_packets(&self.udp_prefix_packets);
+        opt.udp.split_first = self.udp_split_first.parse().unwrap_or(0);
         opt.udp.force_tcp_fallback = self.udp_force_tcp_fallback;
-        opt.socks5_udp_associate = self.socks5_udp_associate;
+        opt.socks5_udp_associate =
+            self.socks5_udp_associate && matches!(self.kind, ProxyKindChoice::Socks5);
+        opt.log_level = Some(self.log_level.as_str().to_string());
         opt.log_file_enabled = self.log_file_enabled;
+        opt.log_file = Some(
+            if self.log_file.trim().is_empty() {
+                LOG_FILENAME_DEFAULT
+            } else {
+                self.log_file.trim()
+            }
+            .to_string(),
+        );
         opt.log_console = self.log_console;
 
         opt
@@ -265,4 +384,73 @@ fn locate_existing_options(exe_dir: &std::path::Path) -> Option<DroverOptions> {
     }
     let candidate = exe_dir.join(redrover_config::OPTIONS_FILENAME);
     DroverOptions::load(&candidate).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_app() -> App {
+        App {
+            kind: ProxyKindChoice::Direct,
+            host: String::new(),
+            port: String::new(),
+            auth: false,
+            login: String::new(),
+            password: String::new(),
+            udp_strategy: UdpStrategy::Classic,
+            udp_delay_ms: "50".into(),
+            udp_prefix_packets: "00, 01".into(),
+            udp_split_first: "0".into(),
+            udp_force_tcp_fallback: false,
+            socks5_udp_associate: false,
+            log_level: LogLevelChoice::Info,
+            log_file_enabled: true,
+            log_file: LOG_FILENAME_DEFAULT.into(),
+            log_console: false,
+            status: Status::Idle,
+            current_exe_dir: PathBuf::new(),
+        }
+    }
+
+    #[test]
+    fn socks5_udp_associate_is_saved_only_for_socks5_mode() {
+        let mut app = test_app();
+        app.socks5_udp_associate = true;
+
+        app.kind = ProxyKindChoice::Direct;
+        assert!(!app.to_options().socks5_udp_associate);
+
+        app.kind = ProxyKindChoice::Http;
+        assert!(!app.to_options().socks5_udp_associate);
+
+        app.kind = ProxyKindChoice::Socks5;
+        assert!(app.to_options().socks5_udp_associate);
+    }
+
+    #[test]
+    fn logging_destinations_and_level_are_saved_from_form() {
+        let mut app = test_app();
+        app.log_level = LogLevelChoice::Debug;
+        app.log_file_enabled = false;
+        app.log_file = "voice-debug.log".into();
+        app.log_console = true;
+
+        let options = app.to_options();
+        assert_eq!(options.log_level.as_deref(), Some("debug"));
+        assert!(!options.log_file_enabled);
+        assert_eq!(options.log_file.as_deref(), Some("voice-debug.log"));
+        assert!(options.log_console);
+    }
+
+    #[test]
+    fn selecting_split_sets_a_valid_default_part_count() {
+        let mut app = test_app();
+        app.udp_split_first = "0".into();
+
+        let _ = app.update(Message::UdpStrategySelected(UdpStrategy::Split));
+
+        assert_eq!(app.udp_split_first, "2");
+        assert!(app.validate().is_ok());
+    }
 }

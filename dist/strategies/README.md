@@ -14,6 +14,6 @@ that need them. The DLL gracefully falls back to a no-op when the file
 is empty or missing.
 
 Put payload files in the staged `strategies/` directory next to
-`redrover.exe` (or rebuild after changing this source directory) and
+`reDrover.exe` (or rebuild after changing this source directory) and
 re-run the installer; they will be copied into every Discord `app-*`
 folder alongside `version.dll`.

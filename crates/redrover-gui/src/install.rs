@@ -22,7 +22,7 @@ pub fn install(exe_dir: &Path, opts: &DroverOptions) -> Result<String> {
     if !src_dll.is_file() {
         bail!(
             "{} is missing next to the installer.\nBuild the C++ DLL first (see dll/README.md) \
-             and drop the resulting version.dll next to redrover.exe.",
+             and drop the resulting version.dll next to reDrover.exe.",
             DLL_FILENAME
         );
     }

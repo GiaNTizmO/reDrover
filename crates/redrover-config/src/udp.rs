@@ -62,11 +62,27 @@ impl UdpStrategy {
         Self::Split,
         Self::Custom,
     ];
+
+    /// Strategies configurable end-to-end from the GUI. The curated UAE
+    /// presets stay parseable for compatibility, but are not selectable
+    /// until non-empty payload files are shipped.
+    pub const GUI_CHOICES: &'static [Self] = &[Self::Off, Self::Classic, Self::Split, Self::Custom];
+
+    pub fn is_gui_choice(self) -> bool {
+        Self::GUI_CHOICES.contains(&self)
+    }
 }
 
 impl std::fmt::Display for UdpStrategy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
+        f.write_str(match self {
+            Self::Off => "Off",
+            Self::Classic => "Classic",
+            Self::UaeV1 => "UAE v1",
+            Self::UaeV2 => "UAE v2",
+            Self::Split => "Split first packet",
+            Self::Custom => "Custom prefix",
+        })
     }
 }
 
@@ -157,6 +173,14 @@ mod tests {
         for s in UdpStrategy::ALL {
             assert_eq!(UdpStrategy::parse(s.as_str()), *s);
         }
+    }
+
+    #[test]
+    fn gui_does_not_offer_unpopulated_curated_presets() {
+        assert!(!UdpStrategy::UaeV1.is_gui_choice());
+        assert!(!UdpStrategy::UaeV2.is_gui_choice());
+        assert!(UdpStrategy::Split.is_gui_choice());
+        assert!(UdpStrategy::Custom.is_gui_choice());
     }
 
     #[test]

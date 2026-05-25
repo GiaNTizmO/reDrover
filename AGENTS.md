@@ -9,7 +9,7 @@ open while you work.
 ## TL;DR
 
 - **Two binaries, one config file.**
-  - `redrover.exe` — Rust + iced installer GUI (Windows-only Discord folder discovery).
+  - `reDrover.exe` — Rust + iced installer GUI (Windows-only Discord folder discovery).
   - `version.dll` (Windows) / `libredrover_preload.{so,dylib}` (POSIX) — C++20 native shim that intercepts WinSock / POSIX socket calls in the running Discord process.
 - They communicate **only** through `drover.ini`. Both halves have their own parser; if you add a knob, edit both.
 - The Windows DLL is loaded via **DLL hijack** of `version.dll` next to `Discord.exe`. The 17 version.dll exports are forwarded at the PE level to `api-ms-win-core-version-l1-1-0`, so no asm trampolines are needed and the same C++ source builds for both x86 and x64.

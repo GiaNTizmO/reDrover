@@ -53,11 +53,11 @@ a `cmd.exe`-friendly wrapper.
   We need the x86/x64 MSVC tools, CMake, and the Windows SDK.
 - **CMake ≥ 3.20** (Visual Studio ships its own copy; that's fine).
 
-## Build the GUI installer (`redrover.exe`)
+## Build the GUI installer (`reDrover.exe`)
 
 ```powershell
 cargo build --release -p redrover-gui
-# → target/release/redrover.exe
+# -> target/release/reDrover.exe
 ```
 
 For day-to-day development you can also `cargo run -p redrover-gui` and
@@ -80,11 +80,11 @@ are incremental. Use `-A Win32` only for a legacy 32-bit Discord install;
 
 ## Run
 
-1. Drop `version.dll` (from the CMake build) next to `redrover.exe`
+1. Drop `version.dll` (from the CMake build) next to `reDrover.exe`
    (from cargo).
 2. Optionally drop `dist/drover-packet.bin` and any `dist/strategies/*.bin`
    payloads you want available.
-3. Launch `redrover.exe`. Fill in the proxy fields (or pick Direct),
+3. Launch `reDrover.exe`. Fill in the proxy fields (or pick Direct),
    tweak the UDP strategy if needed, click **Install**.
 4. The installer copies `version.dll`, `drover.ini`, and the optional
    payloads into every Discord `app-*` folder it can find via the
@@ -100,6 +100,28 @@ The DLL has no Rust-side tests; for the C++ side, the SOCKS5 framing
 in `dll/src/socks5_udp.cpp` would be the highest-value target. A future
 iteration should bring in [Catch2](https://github.com/catchorg/Catch2)
 for unit testing wrap/unwrap round-trips.
+
+## GitHub Actions Releases
+
+The `CI` workflow can be launched manually from the Actions tab to run
+the test/build matrix without publishing anything.
+
+The `Release` workflow can be launched manually with a tag matching the
+workspace version, for example `v0.1.0`, or is started automatically by
+pushing that tag. It publishes archives rather than installers:
+
+| Archive                             | Contents                                |
+| ----------------------------------- | --------------------------------------- |
+| `reDrover-<version>-windows-x64.zip` | `reDrover.exe`, `version.dll`, config and payload files |
+| `reDrover-<version>-linux-x64.tar.gz` | Linux preload library, config and payload files |
+| `reDrover-<version>-linux-arm64.tar.gz` | Linux ARM64 preload library, config and payload files |
+| `reDrover-<version>-macos-arm64.tar.gz` | macOS ARM64 preload library, config and payload files |
+
+Each package is first uploaded as a workflow artifact, then attached to
+the GitHub Release. There is no Windows ARM64 release archive yet:
+MinHook-backed `version.dll` is currently supported only on Windows x64.
+Empty curated strategy placeholders kept in the source tree are not
+included in published archives.
 
 ## Troubleshooting
 

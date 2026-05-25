@@ -16,8 +16,8 @@ fn main() -> iced::Result {
         .with_target(false)
         .try_init();
 
-    iced::application("Redrover", app::App::update, app::App::view)
+    iced::application("reDrover", app::App::update, app::App::view)
         .theme(|_| iced::Theme::TokyoNight)
-        .window_size(iced::Size::new(420.0, 520.0))
+        .window_size(iced::Size::new(500.0, 720.0))
         .run_with(app::App::new)
 }

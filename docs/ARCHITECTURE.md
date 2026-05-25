@@ -1,6 +1,6 @@
 # Architecture
 
-This document explains how Redrover is wired together: the module
+This document explains how reDrover is wired together: the module
 boundaries, the data flow, the threading model, the hook lifecycles on
 each OS, and the design decisions behind the non-obvious choices. If
 you're new to the codebase, read this once before opening a PR.
@@ -32,7 +32,7 @@ The user-facing README is intentionally short. This file is where the
 
 ```
    ┌──────────────────────────────────┐
-   │           redrover.exe           │   Rust + iced (Windows-only Discord folder discovery)
+   │           reDrover.exe           │   Rust + iced (Windows-only Discord folder discovery)
    │      (installer & launcher)      │
    └──────────────┬───────────────────┘
                   │ writes

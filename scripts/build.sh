@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Redrover build script — Linux / macOS.
+# reDrover build script - Linux / macOS.
 #
 # Builds:
 #   1. redrover_core         (static lib, internal)
 #   2. redrover_preload      (libredrover_preload.so on Linux / .dylib on macOS)
-#   3. redrover_gui (cargo)  → target/release/redrover
+#   3. reDrover GUI (cargo)  -> target/release/reDrover
 # Stages everything into build-output/.
 #
 # Usage:
@@ -107,6 +107,7 @@ fi
 # ---- Stage -----------------------------------------------------------------
 
 step "Staging artifacts into $OUTPUT_DIR"
+rm -rf "$OUTPUT_DIR/strategies"
 mkdir -p "$OUTPUT_DIR/strategies"
 
 if [[ "$OS" == "linux" ]]; then
@@ -123,13 +124,14 @@ fi
 
 if [[ $SKIP_GUI -eq 0 ]]; then
     if [[ "$CONFIG" == "Release" ]]; then
-        GUI_SRC="$CARGO_TARGET_DIR/release/redrover"
+        GUI_SRC="$CARGO_TARGET_DIR/release/reDrover"
     else
-        GUI_SRC="$CARGO_TARGET_DIR/debug/redrover"
+        GUI_SRC="$CARGO_TARGET_DIR/debug/reDrover"
     fi
     [[ -f "$GUI_SRC" ]] || fail "GUI binary not found at $GUI_SRC"
-    cp -f "$GUI_SRC" "$OUTPUT_DIR/redrover"
-    chmod +x "$OUTPUT_DIR/redrover"
+    rm -f "$OUTPUT_DIR/redrover"
+    cp -f "$GUI_SRC" "$OUTPUT_DIR/reDrover"
+    chmod +x "$OUTPUT_DIR/reDrover"
 fi
 
 cp -f "$DIST_DIR/drover.ini" "$OUTPUT_DIR/drover.ini"
@@ -138,7 +140,9 @@ if [[ -f "$DIST_DIR/drover-packet.bin" ]]; then
     cp -f "$DIST_DIR/drover-packet.bin" "$OUTPUT_DIR/drover-packet.bin"
 fi
 if [[ -d "$DIST_DIR/strategies" ]]; then
-    cp -f "$DIST_DIR/strategies/"* "$OUTPUT_DIR/strategies/" 2>/dev/null || true
+    find "$DIST_DIR/strategies" -maxdepth 1 -type f \
+        \( ! -name '*.bin' -o -size +0c \) \
+        -exec cp -f '{}' "$OUTPUT_DIR/strategies/" \;
 fi
 
 step "Done"

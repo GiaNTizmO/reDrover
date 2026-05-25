@@ -5,7 +5,15 @@ if(POLICY CMP0091)
     cmake_policy(SET CMP0091 NEW)
 endif()
 
-project(redrover_native LANGUAGES CXX)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../Cargo.toml" REDROVER_VERSION_LINE
+     REGEX "^version = \"[0-9]+\\.[0-9]+\\.[0-9]+\"$")
+string(REGEX REPLACE "^version = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"$" "\\1"
+       REDROVER_VERSION "${REDROVER_VERSION_LINE}")
+if(NOT REDROVER_VERSION)
+    message(FATAL_ERROR "Could not read workspace version from Cargo.toml")
+endif()
+
+project(reDrover_native VERSION ${REDROVER_VERSION} LANGUAGES CXX)
 
 # Static C runtime. The DLL gets injected into Discord's process at load
 # time, and we cannot rely on msvcp140.dll / vcruntime140.dll being
@@ -98,11 +106,15 @@ if(WIN32)
     )
     FetchContent_MakeAvailable(MinHook)
 
+    enable_language(RC)
+    configure_file(src/version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
+
     add_library(redrover_dll SHARED
         src/dllmain.cpp
         src/hooks.cpp
         src/discord_dirs.cpp
         src/exports.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
     )
 
     target_link_libraries(redrover_dll PRIVATE
