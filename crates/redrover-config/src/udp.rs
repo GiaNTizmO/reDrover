@@ -13,11 +13,12 @@
 
 use ini::Properties;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum UdpStrategy {
     /// Don't touch outgoing UDP at all.
     Off,
     /// Original Pascal behavior: prefix bytes 0x00, 0x01 + Sleep(50) + original packet.
+    #[default]
     Classic,
     /// UAE-focused tuning (placeholder name — actual bytes live in dist/strategies/).
     UaeV1,
@@ -27,12 +28,6 @@ pub enum UdpStrategy {
     Split,
     /// Use whatever is specified by `prefix_packets`, `split_first`, etc.
     Custom,
-}
-
-impl Default for UdpStrategy {
-    fn default() -> Self {
-        Self::Classic
-    }
 }
 
 impl UdpStrategy {
