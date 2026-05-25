@@ -8,14 +8,17 @@
 //! 3. Enumerate `app-*` subdirectories of each base dir; keep the ones that
 //!    contain `Discord.exe`, `DiscordCanary.exe`, or `DiscordPTB.exe`.
 
+#[cfg(windows)]
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
 pub const DISCORD_FILENAMES: &[&str] = &["Discord.exe", "DiscordCanary.exe", "DiscordPTB.exe"];
+#[cfg(windows)]
 pub const APP_REG_KEYS: &[&str] = &["Discord", "DiscordCanary", "DiscordPTB"];
 
+#[cfg(windows)]
 pub fn is_discord_executable(filename: &str) -> bool {
     DISCORD_FILENAMES
         .iter()
@@ -131,6 +134,7 @@ pub fn find_discord_base_dirs() -> Result<Vec<PathBuf>> {
     Ok(Vec::new())
 }
 
+#[cfg(any(windows, test))]
 fn extract_base_from_open_command(cmd: &str) -> Option<PathBuf> {
     // The shell command typically looks like:
     //   "C:\Users\Foo\AppData\Local\Discord\app-1.2.3\Discord.exe" -- "%1"
@@ -174,10 +178,7 @@ pub fn pick_newest(dirs: &[PathBuf]) -> Option<PathBuf> {
         let Some(version) = name.strip_prefix("app-") else {
             continue;
         };
-        let parts: Vec<u32> = version
-            .split('.')
-            .map(|p| p.parse().unwrap_or(0))
-            .collect();
+        let parts: Vec<u32> = version.split('.').map(|p| p.parse().unwrap_or(0)).collect();
         match &best {
             None => best = Some((parts, d)),
             Some((b, _)) if &parts > b => best = Some((parts, d)),

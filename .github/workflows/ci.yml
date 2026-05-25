@@ -12,14 +12,24 @@ env:
 
 jobs:
   rust:
-    name: Rust ${{ matrix.os }}
+    name: Rust ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-24.04
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: windows-2025
+            arch: x64
+          - os: windows-11-arm
+            arch: arm64
+          - os: macos-15
+            arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -40,17 +50,15 @@ jobs:
         run: cargo build --workspace --release
 
   native-windows:
-    name: Native DLL (Windows ${{ matrix.arch }})
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64, Win32]
+    # MinHook is an x86/x64 hook engine; there is no working Windows ARM64
+    # native shim until the hook backend is replaced or extended.
+    name: Native DLL (Windows x64)
+    runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure CMake
-        run: cmake -S dll -B dll/build -A ${{ matrix.arch }}
+        run: cmake -S dll -B dll/build -A x64
 
       - name: Build
         run: cmake --build dll/build --config Release
@@ -64,21 +72,27 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: version-${{ matrix.arch }}-dll
+          name: version-windows-x64-dll
           path: dll/build/Release/version.dll
 
   native-posix:
-    name: Native preload (${{ matrix.os }})
+    name: Native preload (${{ matrix.os }} ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-24.04
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-15
+            arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install build tools (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-13 g++-13 cmake
@@ -98,7 +112,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: redrover-preload-${{ matrix.os }}
+          name: redrover-preload-${{ matrix.os }}-${{ matrix.arch }}
           path: |
             dll/build/libredrover_preload.so
             dll/build/libredrover_preload.dylib

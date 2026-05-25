@@ -146,8 +146,10 @@ fn is_discord_running() -> Result<bool> {
 
     unsafe {
         let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)?;
-        let mut entry = PROCESSENTRY32W::default();
-        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+        let mut entry = PROCESSENTRY32W {
+            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+            ..Default::default()
+        };
         let mut found = false;
         if Process32FirstW(snap, &mut entry).is_ok() {
             loop {

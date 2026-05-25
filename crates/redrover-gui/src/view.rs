@@ -2,9 +2,7 @@
 //! Direct mode hides the proxy detail rows, "Authentication off" hides the
 //! login/password rows. Keeps the window short so it fits on small displays.
 
-use iced::widget::{
-    button, checkbox, column, container, pick_list, row, text, text_input, Space,
-};
+use iced::widget::{button, checkbox, column, container, pick_list, row, text, text_input, Space};
 use iced::{Alignment, Background, Border, Color, Element, Length, Padding, Theme};
 use redrover_config::UdpStrategy;
 
@@ -19,19 +17,11 @@ const LABEL_W: f32 = 64.0;
 const FIELD_H: f32 = 28.0;
 
 pub fn view(app: &App) -> Element<'_, Message> {
-    container(
-        column![
-            title_bar(),
-            proxy_card(app),
-            voice_card(app),
-            actions(app),
-        ]
-        .spacing(10),
-    )
-    .padding(14)
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .into()
+    container(column![title_bar(), proxy_card(app), voice_card(app), actions(app),].spacing(10))
+        .padding(14)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
 }
 
 // --- Title bar -------------------------------------------------------------
@@ -56,13 +46,53 @@ fn proxy_card(app: &App) -> Element<'_, Message> {
     let direct = matches!(app.kind, ProxyKindChoice::Direct);
     if !direct {
         col = col
-            .push(labeled("Host", text_field(&app.host, "proxy.example.com", Message::HostChanged, false, Length::Fill)))
-            .push(labeled("Port", text_field(&app.port, "1080", Message::PortChanged, false, Length::Fixed(90.0))))
-            .push(checkbox("Authentication", app.auth).on_toggle(Message::AuthToggled).size(15));
+            .push(labeled(
+                "Host",
+                text_field(
+                    &app.host,
+                    "proxy.example.com",
+                    Message::HostChanged,
+                    false,
+                    Length::Fill,
+                ),
+            ))
+            .push(labeled(
+                "Port",
+                text_field(
+                    &app.port,
+                    "1080",
+                    Message::PortChanged,
+                    false,
+                    Length::Fixed(90.0),
+                ),
+            ))
+            .push(
+                checkbox("Authentication", app.auth)
+                    .on_toggle(Message::AuthToggled)
+                    .size(15),
+            );
         if app.auth {
             col = col
-                .push(labeled("Login", text_field(&app.login, "user", Message::LoginChanged, false, Length::Fill)))
-                .push(labeled("Pass", text_field(&app.password, "•••••••", Message::PasswordChanged, true, Length::Fill)));
+                .push(labeled(
+                    "Login",
+                    text_field(
+                        &app.login,
+                        "user",
+                        Message::LoginChanged,
+                        false,
+                        Length::Fill,
+                    ),
+                ))
+                .push(labeled(
+                    "Pass",
+                    text_field(
+                        &app.password,
+                        "•••••••",
+                        Message::PasswordChanged,
+                        true,
+                        Length::Fill,
+                    ),
+                ));
         }
     } else {
         col = col.push(
@@ -120,7 +150,13 @@ fn voice_card(app: &App) -> Element<'_, Message> {
         labeled(
             "Delay",
             row![
-                text_field(&app.udp_delay_ms, "50", Message::UdpDelayChanged, false, Length::Fixed(80.0)),
+                text_field(
+                    &app.udp_delay_ms,
+                    "50",
+                    Message::UdpDelayChanged,
+                    false,
+                    Length::Fixed(80.0)
+                ),
                 text("ms").size(12).color(MUTED),
             ]
             .spacing(6)
@@ -170,12 +206,9 @@ fn actions(app: &App) -> Element<'_, Message> {
         .style(button::danger)
         .width(Length::Fill);
 
-    column![
-        row![install_btn, uninstall_btn].spacing(8),
-        status_row(app),
-    ]
-    .spacing(6)
-    .into()
+    column![row![install_btn, uninstall_btn].spacing(8), status_row(app),]
+        .spacing(6)
+        .into()
 }
 
 fn status_row(app: &App) -> Element<'_, Message> {
@@ -190,15 +223,15 @@ fn status_row(app: &App) -> Element<'_, Message> {
 // --- Building blocks -------------------------------------------------------
 
 fn section_header<'a>(title: &'a str) -> Element<'a, Message> {
-    text(title)
-        .size(11)
-        .color(ACCENT)
-        .into()
+    text(title).size(11).color(ACCENT).into()
 }
 
 fn labeled<'a>(label: &'a str, control: Element<'a, Message>) -> Element<'a, Message> {
     row![
-        text(label).size(13).width(Length::Fixed(LABEL_W)).color(MUTED),
+        text(label)
+            .size(13)
+            .width(Length::Fixed(LABEL_W))
+            .color(MUTED),
         control,
     ]
     .spacing(8)
