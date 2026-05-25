@@ -71,7 +71,7 @@ jobs:
           if (-not $dumpbin) { exit 0 }
           & $dumpbin /exports dll/build/Release/version.dll | Select-String "forwarded to"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: version-windows-x64-dll
           path: dll/build/Release/version.dll
@@ -111,7 +111,7 @@ jobs:
           ls -la dll/build/
           file dll/build/libredrover_preload.* || true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: redrover-preload-${{ matrix.os }}-${{ matrix.arch }}
           path: |

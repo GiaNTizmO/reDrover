@@ -106,7 +106,7 @@ jobs:
           $archive = "reDrover-$env:VERSION-windows-x64.zip"
           Compress-Archive -Path build-output\* -DestinationPath $archive -Force
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reDrover-${{ needs.metadata.outputs.version }}-windows-x64
           path: reDrover-${{ needs.metadata.outputs.version }}-windows-x64.zip
@@ -152,7 +152,7 @@ jobs:
         run: |
           tar -czf "reDrover-${VERSION}-${PLATFORM}.tar.gz" -C build-output .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reDrover-${{ needs.metadata.outputs.version }}-${{ matrix.platform }}
           path: reDrover-${{ needs.metadata.outputs.version }}-${{ matrix.platform }}.tar.gz
