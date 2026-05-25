@@ -42,7 +42,7 @@ windows = { version = "0.58", features = [
 ] }
 
 # GUI
-iced = { version = "0.13", features = ["tokio", "advanced"] }
+iced = { version = "0.14", features = ["tokio", "advanced"] }
 
 [profile.release]
 opt-level = "z"
