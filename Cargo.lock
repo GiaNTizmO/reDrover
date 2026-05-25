@@ -2800,7 +2800,7 @@ dependencies = [
  "regex",
  "rust-ini 0.21.3",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -2811,7 +2811,7 @@ dependencies = [
  "iced",
  "redrover-config",
  "regex",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
  "windows 0.58.0",
