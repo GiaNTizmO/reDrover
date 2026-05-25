@@ -20,6 +20,10 @@
 #include <cstring>
 #include <vector>
 
+#if !RR_OS_WIN
+#include <netdb.h>
+#endif
+
 #include "config.h"
 #include "logging.h"
 #include "real_io.h"

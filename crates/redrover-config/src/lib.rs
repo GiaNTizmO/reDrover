@@ -209,9 +209,11 @@ mod tests {
     #[test]
     fn roundtrip_can_disable_file_logging() {
         let tmp = std::env::temp_dir().join("redrover-file-logging-disabled-test.ini");
-        let mut opt = DroverOptions::default();
-        opt.log_file_enabled = false;
-        opt.log_console = true;
+        let opt = DroverOptions {
+            log_file_enabled: false,
+            log_console: true,
+            ..DroverOptions::default()
+        };
         opt.save(&tmp).unwrap();
         let loaded = DroverOptions::load(&tmp).unwrap();
         assert!(!loaded.log_file_enabled);
@@ -221,8 +223,10 @@ mod tests {
 
     #[test]
     fn proxy_parses() {
-        let mut opt = DroverOptions::default();
-        opt.proxy = "socks5://user:pass@1.2.3.4:1080".into();
+        let opt = DroverOptions {
+            proxy: "socks5://user:pass@1.2.3.4:1080".into(),
+            ..DroverOptions::default()
+        };
         let v = opt.proxy_value();
         assert!(v.is_specified);
         assert_eq!(v.kind, ProxyKind::Socks5);

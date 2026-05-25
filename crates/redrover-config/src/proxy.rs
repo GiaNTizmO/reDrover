@@ -49,16 +49,32 @@ impl ProxyValue {
             return Self::default();
         };
 
-        let proto_raw = caps.get(1).map(|m| m.as_str()).unwrap_or("").to_ascii_lowercase();
+        let proto_raw = caps
+            .get(1)
+            .map(|m| m.as_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
         let kind = match proto_raw.as_str() {
             "socks5" => ProxyKind::Socks5,
             _ => ProxyKind::Http,
         };
 
-        let login = caps.get(2).map(|m| m.as_str().trim().to_string()).unwrap_or_default();
-        let password = caps.get(3).map(|m| m.as_str().trim().to_string()).unwrap_or_default();
-        let host = caps.get(4).map(|m| m.as_str().trim().to_string()).unwrap_or_default();
-        let port: u16 = caps.get(5).and_then(|m| m.as_str().parse().ok()).unwrap_or(0);
+        let login = caps
+            .get(2)
+            .map(|m| m.as_str().trim().to_string())
+            .unwrap_or_default();
+        let password = caps
+            .get(3)
+            .map(|m| m.as_str().trim().to_string())
+            .unwrap_or_default();
+        let host = caps
+            .get(4)
+            .map(|m| m.as_str().trim().to_string())
+            .unwrap_or_default();
+        let port: u16 = caps
+            .get(5)
+            .and_then(|m| m.as_str().parse().ok())
+            .unwrap_or(0);
 
         Self {
             is_specified: true,

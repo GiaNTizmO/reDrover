@@ -151,7 +151,9 @@ impl App {
                 }
             }
             Message::HostChanged(v) => self.host = v,
-            Message::PortChanged(v) => self.port = v.chars().filter(|c| c.is_ascii_digit()).collect(),
+            Message::PortChanged(v) => {
+                self.port = v.chars().filter(|c| c.is_ascii_digit()).collect()
+            }
             Message::AuthToggled(v) => self.auth = v,
             Message::LoginChanged(v) => self.login = v,
             Message::PasswordChanged(v) => self.password = v,
@@ -173,18 +175,16 @@ impl App {
                 let opts = self.to_options();
                 let exe_dir = self.current_exe_dir.clone();
                 self.status = Status::Working("Installing...".into());
-                return Task::perform(
-                    async move { install::install(&exe_dir, &opts) },
-                    |r| Message::OperationFinished(r.map_err(|e| e.to_string())),
-                );
+                return Task::perform(async move { install::install(&exe_dir, &opts) }, |r| {
+                    Message::OperationFinished(r.map_err(|e| e.to_string()))
+                });
             }
             Message::UninstallPressed => {
                 let exe_dir = self.current_exe_dir.clone();
                 self.status = Status::Working("Uninstalling...".into());
-                return Task::perform(
-                    async move { install::uninstall(&exe_dir) },
-                    |r| Message::OperationFinished(r.map_err(|e| e.to_string())),
-                );
+                return Task::perform(async move { install::uninstall(&exe_dir) }, |r| {
+                    Message::OperationFinished(r.map_err(|e| e.to_string()))
+                });
             }
             Message::OperationFinished(Ok(msg)) => self.status = Status::Ok(msg),
             Message::OperationFinished(Err(msg)) => self.status = Status::Err(msg),
@@ -208,10 +208,8 @@ impl App {
         if !(1..=65535).contains(&port) {
             return Err("Port must be between 1 and 65535.".into());
         }
-        if self.auth {
-            if self.login.trim().is_empty() || self.password.is_empty() {
-                return Err("Login and password are required when authentication is enabled.".into());
-            }
+        if self.auth && (self.login.trim().is_empty() || self.password.is_empty()) {
+            return Err("Login and password are required when authentication is enabled.".into());
         }
         Ok(())
     }
@@ -227,8 +225,16 @@ impl App {
                     ProxyKindChoice::Socks5 => ProxyKind::Socks5,
                     ProxyKindChoice::Direct => unreachable!(),
                 },
-                login: if self.auth { self.login.trim().to_string() } else { String::new() },
-                password: if self.auth { self.password.clone() } else { String::new() },
+                login: if self.auth {
+                    self.login.trim().to_string()
+                } else {
+                    String::new()
+                },
+                password: if self.auth {
+                    self.password.clone()
+                } else {
+                    String::new()
+                },
                 host: self.host.trim().to_string(),
                 port: self.port.trim().parse().unwrap_or(0),
             };
