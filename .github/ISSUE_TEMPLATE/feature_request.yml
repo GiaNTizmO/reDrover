@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a new feature or change.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For ideas tied to upstream issue #65 ("Voice not working"), see
+        the brainstorm in `docs/ISSUE-65-IDEAS.md` and the mapping in
+        `docs/ROADMAP.md` before filing — your idea may already be tracked.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Concrete design sketch if you have one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which files / layers would change?

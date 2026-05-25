@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  rust:
+    name: Rust ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt --check
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace --all-features
+
+      - name: cargo build (release)
+        run: cargo build --workspace --release
+
+  native-windows:
+    name: Native DLL (Windows ${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, Win32]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -S dll -B dll/build -A ${{ matrix.arch }}
+
+      - name: Build
+        run: cmake --build dll/build --config Release
+
+      - name: Verify version.dll forwards
+        shell: pwsh
+        run: |
+          $dumpbin = (Get-ChildItem -Recurse -Path "C:/Program Files/Microsoft Visual Studio" -Filter "dumpbin.exe" | Select-Object -First 1).FullName
+          if (-not $dumpbin) { exit 0 }
+          & $dumpbin /exports dll/build/Release/version.dll | Select-String "forwarded to"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: version-${{ matrix.arch }}-dll
+          path: dll/build/Release/version.dll
+
+  native-posix:
+    name: Native preload (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-13 g++-13 cmake
+          echo "CC=gcc-13" >> $GITHUB_ENV
+          echo "CXX=g++-13" >> $GITHUB_ENV
+
+      - name: Configure CMake
+        run: cmake -S dll -B dll/build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build dll/build --parallel
+
+      - name: Inspect output
+        run: |
+          ls -la dll/build/
+          file dll/build/libredrover_preload.* || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: redrover-preload-${{ matrix.os }}
+          path: |
+            dll/build/libredrover_preload.so
+            dll/build/libredrover_preload.dylib
+          if-no-files-found: ignore

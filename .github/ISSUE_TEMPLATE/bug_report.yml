@@ -1,0 +1,80 @@
+name: Bug report
+description: Something doesn't work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please attach as much of the diagnostic
+        information below as you can — without `drover.log` we usually
+        can't help much.
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 23H2 / Ubuntu 24.04 / macOS 14.5
+    validations:
+      required: true
+
+  - type: input
+    id: discord
+    attributes:
+      label: Discord build
+      description: Help → About → Build Number
+      placeholder: "1.0.9238"
+    validations:
+      required: true
+
+  - type: input
+    id: redrover
+    attributes:
+      label: Redrover version
+      description: Git commit SHA or version shown in the GUI title bar.
+    validations:
+      required: true
+
+  - type: textarea
+    id: drover_ini
+    attributes:
+      label: drover.ini contents
+      description: Redact passwords. Surround with triple backticks.
+      render: ini
+    validations:
+      required: true
+
+  - type: textarea
+    id: drover_log
+    attributes:
+      label: drover.log excerpt
+      description: |
+        Ideally with `[logging] level = debug`. Trim to the relevant
+        startup + first failure.
+      render: text
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configured proxy as ...
+        2. Launched Discord
+        3. Joined voice channel
+        4. Voice doesn't work / ping is 5000ms / ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: |
+        Process Monitor capture (for "DLL not loading" issues),
+        screenshots of the GUI, etc.

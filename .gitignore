@@ -1,0 +1,34 @@
+# Rust
+target/
+**/*.rs.bk
+# Note: Cargo.lock is checked in — this workspace builds binaries
+#       (redrover.exe), and reproducible CI / release builds need it.
+
+# CMake / MSVC
+dll/build/
+dll/out/
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+.vs/
+
+# Build staging
+build-output/
+
+# Editor & IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS clutter
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Runtime artifacts (created next to Discord.exe at runtime, never in repo)
+drover.log
+drover-attached.txt

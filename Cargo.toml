@@ -1,0 +1,52 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/redrover-config",
+    "crates/redrover-gui",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Redrover contributors"]
+repository = "https://github.com/hdrover/discord-drover"
+homepage = "https://github.com/hdrover/discord-drover"
+description = "Per-process proxy and voice-bypass for Discord"
+keywords = ["discord", "proxy", "socks5", "voice", "iced"]
+categories = ["network-programming", "gui"]
+readme = "README.md"
+rust-version = "1.80"
+
+[workspace.dependencies]
+# Shared types and config parsing
+redrover-config = { path = "crates/redrover-config" }
+
+# Third-party
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+rust-ini = "0.21"
+regex = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Windows-specific
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Registry",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Threading",
+    "Win32_Storage_FileSystem",
+    "Win32_UI_Shell",
+] }
+
+# GUI
+iced = { version = "0.13", features = ["tokio", "advanced"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
