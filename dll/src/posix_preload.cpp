@@ -28,8 +28,9 @@
 //   - TCP proxy. On Linux/macOS, the Chromium client honors http_proxy /
 //     https_proxy and SOCKS5 env variables natively, so there's no need
 //     to mangle TCP for Discord. The user just exports the env vars.
-//   - SOCKS5 UDP ASSOCIATE. Same skeleton as on Windows
-//     (see socks5_udp.cpp); fill it in when ready.
+//
+// SOCKS5 UDP ASSOCIATE is shared with Windows through socks5_udp.cpp:
+// sendto() wraps relay traffic and recvfrom() strips the response header.
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1   // needed for RTLD_NEXT on glibc

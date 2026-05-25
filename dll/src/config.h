@@ -38,6 +38,7 @@ struct DroverOptions {
     UdpSettings udp;
     bool socks5_udp_associate = false;
     std::optional<std::string> log_level;
+    bool log_file_enabled = true; // Keep legacy configs writing drover.log by default.
     std::optional<std::string> log_file;
     bool log_console = false; // Windows: AllocConsole + ANSI-colored mirror
 };

@@ -2,7 +2,7 @@
 #
 # Builds both halves of the project and assembles a ready-to-ship folder:
 #   1. Rust GUI installer  (redrover.exe)        via cargo
-#   2. C++ injected DLL    (version.dll, 32-bit) via cmake + msvc
+#   2. C++ injected DLL    (version.dll, matching Discord bitness) via cmake + msvc
 #   3. Stages everything (with dist/drover.ini and dist/strategies/*) into
 #      build-output/ so the result is one drag-and-drop folder.
 #
@@ -16,9 +16,9 @@
 # Requirements (the script checks these up front):
 #   - cargo  (rustup default toolchain, stable)
 #   - cmake  (3.20+)
-#   - cl.exe / link.exe via a Visual Studio 2022 "x86" developer environment.
-#     The script auto-detects VS via vswhere and imports the x86 dev env if
-#     cl.exe isn't already on PATH.
+#   - Visual Studio 2022 with the C++ x86/x64 build tools installed.
+#     CMake's Visual Studio generator discovers the toolchain directly;
+#     no VsDevCmd / Developer Prompt environment is required.
 
 [CmdletBinding()]
 param(
@@ -79,64 +79,6 @@ function Ensure-CMake {
     }
     $version = (cmake --version | Select-Object -First 1)
     Write-Host "cmake: $version"
-}
-
-# Locate Visual Studio's x86 developer environment if cl.exe isn't already
-# usable. We don't ship VsDevCmd.bat invocations into every cmake call —
-# instead we import the env vars once and reuse them.
-function Ensure-VsX86Env {
-    if (Test-Command 'cl.exe') {
-        Write-Host 'cl.exe already on PATH — assuming a developer prompt.'
-        return
-    }
-
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (-not (Test-Path $vswhere)) {
-        Fail @"
-Visual Studio not found and cl.exe is not on PATH.
-Install Visual Studio 2022 with the 'Desktop development with C++' workload
-(and the C++ x86/x64 build tools component), then run this script again.
-"@
-    }
-
-    $installPath = & $vswhere -latest -products '*' `
-        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-        -property installationPath
-    if (-not $installPath) {
-        Fail "vswhere couldn't locate a Visual Studio install with the C++ x86/x64 tools."
-    }
-
-    $vsDevCmd = Join-Path $installPath 'Common7\Tools\VsDevCmd.bat'
-    if (-not (Test-Path $vsDevCmd)) {
-        Fail "VsDevCmd.bat not found at $vsDevCmd."
-    }
-
-    $vsArch = if ($Arch -eq 'x64') { 'amd64' } else { 'x86' }
-    Write-Host "Importing $vsArch dev environment from $installPath ..."
-    # Run VsDevCmd in a child cmd.exe and pull every env var back into our session.
-    $marker = '<<<REDROVER_ENV>>>'
-    $cmd = "`"$vsDevCmd`" -arch=$vsArch -host_arch=x64 -no_logo && echo $marker && set"
-    $output = & cmd.exe /c $cmd
-    if ($LASTEXITCODE -ne 0) {
-        Fail "VsDevCmd.bat failed (exit $LASTEXITCODE)."
-    }
-
-    $afterMarker = $false
-    foreach ($line in $output) {
-        if (-not $afterMarker) {
-            if ($line -eq $marker) { $afterMarker = $true }
-            continue
-        }
-        if ($line -match '^([^=]+)=(.*)$') {
-            $name  = $matches[1]
-            $value = $matches[2]
-            Set-Item -Path ("Env:$name") -Value $value
-        }
-    }
-
-    if (-not (Test-Command 'cl.exe')) {
-        Fail "Imported VsDevCmd but cl.exe is still missing — please open the matching 'Native Tools Command Prompt for VS 2022' manually and re-run."
-    }
 }
 
 # --- Build steps -------------------------------------------------------------
@@ -267,7 +209,6 @@ if ($Clean) { Invoke-Clean }
 if ($Skip -ne 'Gui') { Ensure-Cargo }
 if ($Skip -ne 'Dll') {
     Ensure-CMake
-    Ensure-VsX86Env
 }
 
 if ($Skip -ne 'Gui') { Build-Gui }

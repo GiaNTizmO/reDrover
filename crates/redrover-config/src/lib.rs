@@ -26,6 +26,7 @@
 //!
 //! [logging]
 //! level = info                      ; off | error | warn | info | debug | trace
+//! file_enabled = true               ; write log messages to `file`
 //! file = drover.log                 ; relative to Discord.exe folder
 //! ```
 
@@ -38,7 +39,7 @@ use anyhow::{Context, Result};
 use ini::Ini;
 
 pub use proxy::{ProxyKind, ProxyValue};
-pub use udp::{UdpStrategy, UdpSettings};
+pub use udp::{UdpSettings, UdpStrategy};
 
 pub const DLL_FILENAME: &str = "version.dll";
 pub const OPTIONS_FILENAME: &str = "drover.ini";
@@ -46,17 +47,34 @@ pub const PACKET_FILENAME: &str = "drover-packet.bin";
 pub const LOG_FILENAME_DEFAULT: &str = "drover.log";
 
 /// Top-level config, parsed from `drover.ini`.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DroverOptions {
     pub proxy: String,
     pub udp: UdpSettings,
     pub socks5_udp_associate: bool,
     pub log_level: Option<String>,
+    /// Write log output to `log_file`. Missing keys preserve the historical
+    /// behavior of writing `drover.log`.
+    pub log_file_enabled: bool,
     pub log_file: Option<String>,
     /// On Windows: spawn a console window via `AllocConsole` and mirror
     /// log output there. On POSIX: still routes log output to stderr.
     /// See ISSUE-65-IDEAS.md §4.3 — diagnostic logging.
     pub log_console: bool,
+}
+
+impl Default for DroverOptions {
+    fn default() -> Self {
+        Self {
+            proxy: String::new(),
+            udp: UdpSettings::default(),
+            socks5_udp_associate: false,
+            log_level: Some("info".to_string()),
+            log_file_enabled: true,
+            log_file: Some(LOG_FILENAME_DEFAULT.to_string()),
+            log_console: false,
+        }
+    }
 }
 
 impl DroverOptions {
@@ -89,6 +107,10 @@ impl DroverOptions {
                 .map(parse_bool)
                 .unwrap_or(false),
             log_level: logging.and_then(|s| s.get("level")).map(str::to_string),
+            log_file_enabled: logging
+                .and_then(|s| s.get("file_enabled"))
+                .map(parse_bool)
+                .unwrap_or(true),
             log_file: logging.and_then(|s| s.get("file")).map(str::to_string),
             log_console: logging
                 .and_then(|s| s.get("console"))
@@ -103,8 +125,7 @@ impl DroverOptions {
     pub fn save(&self, path: &Path) -> Result<()> {
         let mut ini = Ini::new();
 
-        ini.with_section(Some("drover"))
-            .set("proxy", &self.proxy);
+        ini.with_section(Some("drover")).set("proxy", &self.proxy);
 
         // SectionSetter::set returns `&mut Self`, so we deliberately keep one
         // mutable binding per section and chain `set` calls as statements
@@ -125,14 +146,16 @@ impl DroverOptions {
         ini.with_section(Some("socks5"))
             .set("udp_associate", bool_str(self.socks5_udp_associate));
 
-        // Always emit the [logging] section with sane defaults. Skipping
-        // `file` here meant the DLL had no path to write to and the log
-        // file silently never appeared — the most common "is it even
-        // loading?" footgun.
+        // Always emit the [logging] section with explicit destinations so
+        // the user's choice is not lost when the GUI rewrites this file.
         {
             let mut log = ini.with_section(Some("logging"));
             log.set("level", self.log_level.as_deref().unwrap_or("info"));
-            log.set("file", self.log_file.as_deref().unwrap_or(LOG_FILENAME_DEFAULT));
+            log.set("file_enabled", bool_str(self.log_file_enabled));
+            log.set(
+                "file",
+                self.log_file.as_deref().unwrap_or(LOG_FILENAME_DEFAULT),
+            );
             log.set("console", bool_str(self.log_console));
         }
 
@@ -154,7 +177,11 @@ fn parse_bool(s: &str) -> bool {
 }
 
 fn bool_str(b: bool) -> &'static str {
-    if b { "true" } else { "false" }
+    if b {
+        "true"
+    } else {
+        "false"
+    }
 }
 
 #[cfg(test)]
@@ -168,6 +195,27 @@ mod tests {
         opt.save(&tmp).unwrap();
         let loaded = DroverOptions::load(&tmp).unwrap();
         assert_eq!(loaded, opt);
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn defaults_enable_standard_logging_destination() {
+        let opt = DroverOptions::default();
+        assert_eq!(opt.log_level.as_deref(), Some("info"));
+        assert!(opt.log_file_enabled);
+        assert_eq!(opt.log_file.as_deref(), Some(LOG_FILENAME_DEFAULT));
+    }
+
+    #[test]
+    fn roundtrip_can_disable_file_logging() {
+        let tmp = std::env::temp_dir().join("redrover-file-logging-disabled-test.ini");
+        let mut opt = DroverOptions::default();
+        opt.log_file_enabled = false;
+        opt.log_console = true;
+        opt.save(&tmp).unwrap();
+        let loaded = DroverOptions::load(&tmp).unwrap();
+        assert!(!loaded.log_file_enabled);
+        assert!(loaded.log_console);
         let _ = std::fs::remove_file(&tmp);
     }
 

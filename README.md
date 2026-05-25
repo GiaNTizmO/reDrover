@@ -51,7 +51,7 @@ implemented incrementally.
 
 - **HTTP and SOCKS5 proxies** for Discord's TCP (chat, REST, gateway, updater).
 - **HTTP Basic auth** (RFC 7617).
-- **SOCKS5 username/password auth** (RFC 1929).
+- **SOCKS5 username/password auth for UDP ASSOCIATE** (RFC 1929).
 - **SOCKS5 UDP ASSOCIATE** (RFC 1928 §7) — actual UDP-over-SOCKS5 relay, not just TCP.
 - **Pluggable voice-UDP strategies** — `classic`, `uae_v1/v2`, `split`, `custom`, `force_tcp_fallback`.
 - **Drop-in compatibility** with `drover.ini` from the original Pascal project.
@@ -116,6 +116,7 @@ udp_associate = false                         ; route voice UDP through SOCKS5 U
 
 [logging]
 level   = info                                ; off | error | warn | info | debug | trace
+file_enabled = true                           ; write the configured log file
 file    = drover.log
 console = false                               ; Windows: AllocConsole + ANSI-color live tail
 ```
@@ -202,7 +203,8 @@ See [`docs/BUILDING.md`](docs/BUILDING.md) for flags, troubleshooting, and CI.
 The project is **functional but young**. Known working:
 
 - HTTP proxy with and without Basic auth (TCP).
-- SOCKS5 proxy with and without user/pass auth (TCP, via HTTP-CONNECT → SOCKS5 translation).
+- SOCKS5 TCP proxy via HTTP-CONNECT to SOCKS5 translation (NO_AUTH method).
+- SOCKS5 UDP ASSOCIATE with and without user/pass auth.
 - All `classic` / `custom` / `split` / `uae_*` UDP strategies for voice bypass.
 - SOCKS5 UDP ASSOCIATE — sync receive path (most TCP responses, some UDP setups).
 - Cross-platform compile on Windows / Linux / macOS.

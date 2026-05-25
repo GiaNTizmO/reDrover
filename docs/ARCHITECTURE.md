@@ -177,6 +177,7 @@ udp_associate       = false
 
 [logging]
 level   = info
+file_enabled = true
 file    = drover.log
 console = false
 ```
@@ -447,7 +448,8 @@ in `crates/redrover-config/src/udp.rs`. See the
 `dll/src/logging.cpp` is intentionally minimal — no `spdlog`, no `fmt`.
 We use `std::format` directly and write to:
 
-1. The log file (`drover.log` next to Discord.exe, configurable).
+1. The log file (`drover.log` next to Discord.exe by default), when
+   `[logging] file_enabled = true`.
 2. The debug console (when opt-in via `[logging] console = true`).
 3. `OutputDebugStringA` on Windows / `stderr` on POSIX (always, for
    tools like DbgView or terminal usage).

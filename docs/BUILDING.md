@@ -25,14 +25,16 @@ architecture and runtime usage on each OS.
 | Flag                | What it does                                              |
 | ------------------- | --------------------------------------------------------- |
 | `-Config Debug`     | Build the Debug configuration of both halves              |
+| `-Arch Win32`       | Target a legacy 32-bit Discord instead of the x64 default |
 | `-Clean`            | Wipe `target/`, `dll/build/`, and `build-output/` first   |
 | `-Skip Dll`         | Only build the Rust GUI                                   |
 | `-Skip Gui`         | Only build the DLL                                        |
 | `-VerboseLog`       | Pass `--verbose` to cargo and cmake                       |
 
-The script auto-detects Visual Studio's x86 developer environment via
-`vswhere`, so you don't need to open the "x86 Native Tools" prompt
-manually. `scripts\build.cmd` is a `cmd.exe`-friendly wrapper.
+The script lets CMake's Visual Studio generator locate the installed
+toolchain directly. It does not invoke `vswhere` or `VsDevCmd`, and it
+can be run from an ordinary PowerShell session. `scripts\build.cmd` is
+a `cmd.exe`-friendly wrapper.
 
 ### POSIX script flags (`build.sh`)
 
@@ -48,7 +50,7 @@ manually. `scripts\build.cmd` is a `cmd.exe`-friendly wrapper.
 
 - **Rust** (stable). Install via [rustup](https://rustup.rs/).
 - **Visual Studio 2022** with the "Desktop development with C++" workload.
-  We need the 32-bit MSVC compiler (`x86`), CMake, and the Windows SDK.
+  We need the x86/x64 MSVC tools, CMake, and the Windows SDK.
 - **CMake ≥ 3.20** (Visual Studio ships its own copy; that's fine).
 
 ## Build the GUI installer (`redrover.exe`)
@@ -67,13 +69,14 @@ launches and renders but "Install" is a no-op.
 
 ```powershell
 cd dll
-cmake -S . -B build -A Win32          # ← Win32 is mandatory; Discord is 32-bit
+cmake -S . -B build -A x64            # current Discord releases
 cmake --build build --config Release
 # → build/Release/version.dll
 ```
 
 The first configure pulls MinHook via `FetchContent`; subsequent builds
-are incremental.
+are incremental. Use `-A Win32` only for a legacy 32-bit Discord install;
+`version.dll` must have the same bitness as `Discord.exe`.
 
 ## Run
 
@@ -100,8 +103,10 @@ for unit testing wrap/unwrap round-trips.
 
 ## Troubleshooting
 
-- **`fatal error LNK1112: module machine type 'x64' conflicts with target
-  machine type 'x86'`** — you forgot `-A Win32`. The DLL must be 32-bit.
+- **`fatal error LNK1112: module machine type ... conflicts with target
+  machine type ...`** — clean `dll/build/` and configure again with the
+  architecture matching the Discord executable (`-A x64` normally, or
+  `-A Win32` for legacy 32-bit installs).
 - **MinHook fetch fails** — check your network or pre-populate
   `dll/build/_deps/minhook-src/` from a clean clone.
 - **Discord still uses the system DLL** — `version.dll` must live in
