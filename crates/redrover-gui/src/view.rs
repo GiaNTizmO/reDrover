@@ -133,6 +133,9 @@ fn voice_card(app: &App) -> Element<'_, Message> {
         checkbox("SOCKS5 UDP associate", app.socks5_udp_associate)
             .on_toggle(Message::Socks5UdpAssociateToggled)
             .size(15),
+        checkbox("Log to file", app.log_file_enabled)
+            .on_toggle(Message::LogFileToggled)
+            .size(15),
         checkbox("Debug console", app.log_console)
             .on_toggle(Message::LogConsoleToggled)
             .size(15),

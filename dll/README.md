@@ -6,11 +6,12 @@ picture. This README only covers DLL-local concerns.
 ## Build
 
 ```powershell
-cmake -S . -B build -A Win32
+cmake -S . -B build -A x64
 cmake --build build --config Release
 ```
 
 Output: `build/Release/version.dll`.
+Use `-A Win32` only when targeting a legacy 32-bit Discord executable; the DLL bitness must match its host process.
 
 ## Layout
 

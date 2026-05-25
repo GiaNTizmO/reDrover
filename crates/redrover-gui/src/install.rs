@@ -4,7 +4,7 @@
 //! Strategy:
 //! - For each `app-*` Discord directory found via the registry, write
 //!   `drover.ini` and copy `version.dll`. Also copy `drover-packet.bin`
-//!   and any strategy payload that lives next to the installer.
+//!   and curated strategy payloads staged under `strategies/`.
 //! - Uninstall removes those files from every detected directory.
 
 use std::fs;
@@ -14,6 +14,8 @@ use anyhow::{bail, Result};
 use redrover_config::{DroverOptions, DLL_FILENAME, OPTIONS_FILENAME, PACKET_FILENAME};
 
 use crate::discord;
+
+const STRATEGY_PAYLOAD_FILENAMES: &[&str] = &["uae-v1.bin", "uae-v2.bin"];
 
 pub fn install(exe_dir: &Path, opts: &DroverOptions) -> Result<String> {
     let src_dll = exe_dir.join(DLL_FILENAME);
@@ -34,7 +36,7 @@ pub fn install(exe_dir: &Path, opts: &DroverOptions) -> Result<String> {
         bail!("No Discord installation was found in the registry.");
     }
 
-    let extras = extra_filenames(exe_dir);
+    let extras = extra_files();
     let mut errors: Vec<String> = Vec::new();
 
     // Save a master copy of drover.ini next to the installer too, so the
@@ -54,12 +56,12 @@ pub fn install(exe_dir: &Path, opts: &DroverOptions) -> Result<String> {
             errors.push(format!("{}: {}", dst_dll.display(), e));
         }
 
-        for extra in &extras {
-            let src = exe_dir.join(extra);
+        for (source, filename) in &extras {
+            let src = exe_dir.join(source);
             if !src.exists() {
                 continue;
             }
-            let dst = dir.join(extra);
+            let dst = dir.join(filename);
             if let Err(e) = copy_unless_same(&src, &dst) {
                 errors.push(format!("{}: {}", dst.display(), e));
             }
@@ -67,10 +69,7 @@ pub fn install(exe_dir: &Path, opts: &DroverOptions) -> Result<String> {
     }
 
     if errors.is_empty() {
-        Ok(format!(
-            "Installed into {} Discord folder(s).",
-            dirs.len()
-        ))
+        Ok(format!("Installed into {} Discord folder(s).", dirs.len()))
     } else {
         bail!("Installed with errors:\n{}", errors.join("\n"))
     }
@@ -89,7 +88,10 @@ pub fn uninstall(_exe_dir: &Path) -> Result<String> {
     let mut removed = 0;
     let mut errors = Vec::new();
     for dir in &dirs {
-        for filename in [OPTIONS_FILENAME, DLL_FILENAME, PACKET_FILENAME] {
+        for filename in [OPTIONS_FILENAME, DLL_FILENAME, PACKET_FILENAME]
+            .into_iter()
+            .chain(STRATEGY_PAYLOAD_FILENAMES.iter().copied())
+        {
             let path = dir.join(filename);
             if path.exists() {
                 match fs::remove_file(&path) {
@@ -119,19 +121,28 @@ fn normalize(p: &Path) -> PathBuf {
     p.canonicalize().unwrap_or_else(|_| p.to_path_buf())
 }
 
-/// Optional payload files we should copy alongside `version.dll`.
-/// At minimum `drover-packet.bin`, plus any strategy preset that lives in
-/// `dist/strategies/` (e.g. `dist/strategies/uae-etisalat.bin`).
-fn extra_filenames(_exe_dir: &Path) -> Vec<String> {
-    vec![PACKET_FILENAME.to_string()]
+/// Optional payload files copied alongside `version.dll`.
+///
+/// Build output keeps curated strategy files in a `strategies/` directory,
+/// while the injected DLL reads them from the Discord executable directory.
+fn extra_files() -> Vec<(PathBuf, &'static str)> {
+    std::iter::once((PathBuf::from(PACKET_FILENAME), PACKET_FILENAME))
+        .chain(
+            STRATEGY_PAYLOAD_FILENAMES
+                .iter()
+                .copied()
+                .map(|filename| (PathBuf::from("strategies").join(filename), filename)),
+        )
+        .collect()
 }
 
 #[cfg(windows)]
 fn is_discord_running() -> Result<bool> {
-    use windows::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
-    };
     use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
 
     unsafe {
         let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)?;
@@ -140,7 +151,11 @@ fn is_discord_running() -> Result<bool> {
         let mut found = false;
         if Process32FirstW(snap, &mut entry).is_ok() {
             loop {
-                let end = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
+                let end = entry
+                    .szExeFile
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.szExeFile.len());
                 let name = String::from_utf16_lossy(&entry.szExeFile[..end]);
                 if discord::is_discord_executable(&name) {
                     found = true;
@@ -159,4 +174,21 @@ fn is_discord_running() -> Result<bool> {
 #[cfg(not(windows))]
 fn is_discord_running() -> Result<bool> {
     Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn strategy_payloads_are_flattened_for_runtime_lookup() {
+        assert_eq!(
+            extra_files(),
+            vec![
+                (PathBuf::from(PACKET_FILENAME), PACKET_FILENAME),
+                (PathBuf::from("strategies").join("uae-v1.bin"), "uae-v1.bin"),
+                (PathBuf::from("strategies").join("uae-v2.bin"), "uae-v2.bin"),
+            ]
+        );
+    }
 }

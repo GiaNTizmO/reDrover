@@ -4,7 +4,7 @@
 //      didn't take" problem, not a redrover bug.
 //   2. Load drover.ini. We need it before Logger::init so the [logging]
 //      section is honored.
-//   3. Init Logger (file + maybe spawn console-setup thread).
+//   3. Init Logger (optional file + maybe spawn console-setup thread).
 //   4. Resolve the real version.dll trampolines.
 //   5. Install hooks.
 //
@@ -80,7 +80,9 @@ DWORD WINAPI deferred_console_init(LPVOID) {
     Sleep(50);
     LOG_INFO("--- redrover console attached ---");
     log_state_summary();
-    LOG_INFO("Tip: file 'drover.log' has the full log including the events that fired before the console opened.");
+    if (redrover::g_options.log_file_enabled) {
+        LOG_INFO("Tip: the configured log file includes events that fired before the console opened.");
+    }
     return 0;
 }
 
@@ -102,8 +104,8 @@ void on_attach(HMODULE module) {
         config_error = e.what();
     }
 
-    // Step 3 — logger init. File logging only. Console (if requested) is
-    // marked as "wanted" but the actual AllocConsole happens later, off
+    // Step 3 — logger init. File output is optional. Console (if requested)
+    // is marked as "wanted" but the actual AllocConsole happens later, off
     // the DllMain thread.
     redrover::Logger::init(current_dir);
     LOG_INFO("redrover dll attached at {}", current_dir.string());

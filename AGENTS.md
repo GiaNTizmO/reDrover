@@ -79,8 +79,8 @@ open while you work.
 | Rust unit tests         | `cargo test --workspace`                      |
 | Cross-compile sanity    | `cargo check --workspace` on a fresh checkout |
 
-The Windows script auto-detects Visual Studio's dev environment via
-`vswhere`; you don't need to open the "Native Tools" prompt manually.
+The Windows script delegates Visual Studio toolchain selection to CMake's
+Visual Studio generator; it does not invoke `vswhere` or `VsDevCmd`.
 
 ## Where to find things
 

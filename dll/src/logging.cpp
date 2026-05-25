@@ -70,12 +70,13 @@ LogLevel Logger::level() { return g_level; }
 void Logger::init(const std::filesystem::path& exe_dir) {
     if (g_options.log_level) g_level = parse_level(*g_options.log_level);
 
-    // Default to "drover.log" if drover.ini didn't specify a file. The
-    // pre-fix behavior was "no file path → no log file" — which caused
-    // confusion when troubleshooting "is the DLL even loading?".
-    auto name = g_options.log_file.value_or(std::string{"drover.log"});
-    if (!name.empty()) {
-        g_log_path = exe_dir / name;
+    g_log_path.clear();
+    if (g_options.log_file_enabled) {
+        // Default to "drover.log" if legacy configs do not specify a name.
+        auto name = g_options.log_file.value_or(std::string{"drover.log"});
+        if (!name.empty()) {
+            g_log_path = exe_dir / name;
+        }
     }
 
     // Mark "we want console output" but DON'T trigger AllocConsole here.

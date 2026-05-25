@@ -27,8 +27,8 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 #                            DYLD_INSERT_LIBRARIES; intercepts socket(2) /
 #                            sendto(2) via dlsym(RTLD_NEXT, ...).
 #
-# Build, Windows (Visual Studio + 32-bit toolchain):
-#     cmake -S . -B build -A Win32
+# Build, Windows (Visual Studio; use Win32 only for a legacy 32-bit Discord):
+#     cmake -S . -B build -A x64
 #     cmake --build build --config Release
 #
 # Build, Linux:

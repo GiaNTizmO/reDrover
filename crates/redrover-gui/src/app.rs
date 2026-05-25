@@ -32,6 +32,7 @@ pub enum Message {
     UdpDelayChanged(String),
     UdpForceTcpToggled(bool),
     Socks5UdpAssociateToggled(bool),
+    LogFileToggled(bool),
     LogConsoleToggled(bool),
 
     InstallPressed,
@@ -73,6 +74,7 @@ pub struct App {
     pub udp_delay_ms: String,
     pub udp_force_tcp_fallback: bool,
     pub socks5_udp_associate: bool,
+    pub log_file_enabled: bool,
     pub log_console: bool,
 
     // Runtime
@@ -111,6 +113,7 @@ impl App {
             udp_delay_ms: opt.udp.prefix_delay_ms.to_string(),
             udp_force_tcp_fallback: opt.udp.force_tcp_fallback,
             socks5_udp_associate: opt.socks5_udp_associate,
+            log_file_enabled: opt.log_file_enabled,
             log_console: opt.log_console,
 
             status: Status::Idle,
@@ -159,6 +162,7 @@ impl App {
             }
             Message::UdpForceTcpToggled(v) => self.udp_force_tcp_fallback = v,
             Message::Socks5UdpAssociateToggled(v) => self.socks5_udp_associate = v,
+            Message::LogFileToggled(v) => self.log_file_enabled = v,
             Message::LogConsoleToggled(v) => self.log_console = v,
 
             Message::InstallPressed => {
@@ -235,6 +239,7 @@ impl App {
         opt.udp.prefix_delay_ms = self.udp_delay_ms.parse().unwrap_or(50);
         opt.udp.force_tcp_fallback = self.udp_force_tcp_fallback;
         opt.socks5_udp_associate = self.socks5_udp_associate;
+        opt.log_file_enabled = self.log_file_enabled;
         opt.log_console = self.log_console;
 
         opt

@@ -33,7 +33,7 @@ Everything that doesn't need to talk to the OS interception mechanism:
 | `proxy_value.{h,cpp}` | Proxy URL parser                                     |
 | `socket_manager.{h,cpp}` | Thread-safe per-socket bookkeeping                |
 | `udp_strategy.{h,cpp}` | Pluggable UDP first-send strategies                 |
-| `socks5_udp.{h,cpp}`  | SOCKS5 UDP ASSOCIATE skeleton                        |
+| `socks5_udp.{h,cpp}`  | SOCKS5 UDP ASSOCIATE relay implementation            |
 | `logging.{h,cpp}` | Tiny `std::format` logger                                |
 | `real_io.{h,cpp}` | Bridge to the unhooked `sendto` (per-OS shim sets the ptr) |
 
@@ -58,7 +58,7 @@ trampolines.
 
 | File                  | Purpose                                              |
 | --------------------- | ---------------------------------------------------- |
-| `posix_preload.cpp`   | LD_PRELOAD / DYLD_INSERT_LIBRARIES hooks for `socket(2)` and `sendto(2)` |
+| `posix_preload.cpp`   | LD_PRELOAD / DYLD_INSERT_LIBRARIES hooks for `socket(2)`, `sendto(2)`, and `recvfrom(2)` |
 
 That's it — one file. Everything else is in `redrover_core`.
 
@@ -78,8 +78,8 @@ otherwise `~/.config/redrover/drover.ini`.
 The Linux Chromium binary (which Discord ships) honors the `http_proxy`,
 `https_proxy`, and `all_proxy` environment variables natively, so you
 generally don't need redrover to mangle TCP — just `export` the vars and
-launch Discord. redrover's value-add on Linux is exclusively the UDP
-voice-channel mangling and (eventually) SOCKS5 UDP ASSOCIATE.
+launch Discord. redrover's value-add on Linux is UDP voice-channel
+mangling and SOCKS5 UDP ASSOCIATE relay support.
 
 If you want force-everything-through-a-proxy with no TCP escape, look at
 `proxychains-ng` instead; it composes cleanly with `LD_PRELOAD`.

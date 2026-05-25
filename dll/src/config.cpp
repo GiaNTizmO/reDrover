@@ -160,6 +160,7 @@ DroverOptions Config::load(const std::filesystem::path& ini_path) {
         opt.socks5_udp_associate = parse_bool(t.get("socks5", "udp_associate"));
     }
     if (t.has("logging", "level"))   opt.log_level   = t.get("logging", "level");
+    if (t.has("logging", "file_enabled")) opt.log_file_enabled = parse_bool(t.get("logging", "file_enabled"));
     if (t.has("logging", "file"))    opt.log_file    = t.get("logging", "file");
     if (t.has("logging", "console")) opt.log_console = parse_bool(t.get("logging", "console"));
 
